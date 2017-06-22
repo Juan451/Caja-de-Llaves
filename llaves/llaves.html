@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="author" content="Calin Valasa">
+	<title>Gestión llaves</title>
+	<link rel="stylesheet" href="css/style.css"/>
+	<script src="js/jquery-2.0.0.min.js" ></script>
+	<script type="text/javascript" >
+
+		var solicitud = indexedDB.open("almacenLLaves");
+		solicitud.onupgradeneeded = function() { 
+  			var db = solicitud.result;
+  			var objAlm = db.createObjectStore("llaves", {keyPath: "codigo"});
+  			var posIndex = objAlm.createIndex("pos", "posicion", {unique: true});
+  			var descIndex = objAlm.createIndex("desc", "descripcion");
+  		}	
+ 		
+  		function insertar() {
+  			if (/^\d{2}[idg]\d{3}/.test($("#codigo").val())) {
+  				var db = solicitud.result;
+  				var trans = db.transaction("llaves", "readwrite");
+  				var obj = trans.objectStore("llaves");
+  				var grab = obj.add({
+  					codigo: $("#codigo").val(),
+  					posicion: $("#pos").val(),
+  					descripcion: $("#desc").val()
+  				}); 			    
+    			document.getElementById("altaLlave").reset();
+    		} else {
+    			alert("Formato código incorecto");
+    		}
+  		}
+
+  		function modificar() {
+  			var db = solicitud.result;
+  			var trans = db.transaction("llaves", "readwrite");
+  			var obj = trans.objectStore("llaves");
+  			var grab = obj.put({
+  				codigo: $("#codigo").val(),
+  				posicion: $("#pos").val(),
+  				descripcion: $("#desc").val()
+  			});
+  			grab.onsuccess = function() {
+    			document.getElementById("altaLlave").reset();
+    			cambiaCss();
+    		}
+  		}
+
+  		function borrar() {
+  			var db = solicitud.result;
+  			var trans = db.transaction("llaves", "readwrite");
+  			var obj = trans.objectStore("llaves");
+  			var cod = $("#codigo").val(); 				
+  			var res = obj.delete(cod);
+  			document.getElementById("altaLlave").reset();
+  			res.onsuccess = function() {
+  				alert("Eliminado");
+  				cambiaCss();
+  			}
+  			res.onerror = function() {
+  				alert("No eliminado");
+  			}
+  		}
+
+  		function buscar(tipo) {  			
+  			var db = solicitud.result;
+  			var trans = db.transaction("llaves", "readonly");
+  			var obj = trans.objectStore("llaves");
+  			if (tipo == "posicion") {
+  				var pos = $("#posic").val();
+  				var index = obj.index("pos");
+  				var res = index.get(pos);
+  			} else {
+  				var cod = $("#cod").val();  				
+  				var res = obj.get(cod);
+  			}
+  			res.onsuccess = function() {
+  				var result = res.result;
+  				if (result !== undefined) {
+  					$("#codigo").val(result.codigo);
+  					$("#pos").val(result.posicion);
+  					$("#desc").val(result.descripcion);
+  					$("#alta").css("display","none");
+  					$("#modif").css("display","inline");
+  					$("#borra").css("display","inline");
+  					$("#cancela").css("display","inline");
+  				} else {
+  					alert("No encontrado");
+  				}
+  			}
+  		}
+
+  		function cancelar() {
+  				document.getElementById("altaLlave").reset();
+  				cambiaCss();
+  			}
+
+  		function cambiaCss() {
+  				$("#alta").css("display","inline");
+  				$("#modif").css("display","none");
+  				$("#borra").css("display","none");
+  				$("#cancela").css("display","none");
+  			}
+
+	</script>	
+</head>
+
+<body>
+
+	<h1>GESTIÓN LLAVES</h1>
+
+	<form name="input" method="post" id="altaLlave">
+		<fieldset>
+			<h2>Alta llave</h2>
+			<label for="cod">Código llave</label>
+				<input type="text" name="codigo" id="codigo" placeholder="99X999">
+			<label for="pos">Posición llave</label>
+				<input type="text" name="pos" id="pos">
+			<label for="desc">Descripción llave</label>
+				<textarea id="desc"></textarea>
+				<button type="button" id="alta" onclick="insertar();">Alta</button>
+				<button type="button" id="modif" onclick="modificar();">Modificar</button>
+				<button type="button" id="borra" onclick="borrar();">Eliminar</button>
+				<button type="button" id="cancela" onclick="cancelar();">Cancelar</button>
+		</fieldset>
+	</form>
+
+	<form id="buscar">
+		<fieldset>
+			<label for="bus">Buscar por posición</label>
+			<input type="text" id="posic">
+			<button type="button" id="busca" onclick="buscar('posicion');">Buscar</button>
+		</fieldset>
+	</form>
+	
+	<form id="buscar2">
+		<fieldset>
+			<label for="bus">Buscar por código</label>
+			<input type="text" id="cod">
+			<button type="button" id="busca2" onclick="buscar();">Buscar</button>
+		</fieldset>
+	</form>
+
+</body>	
+</html>	
